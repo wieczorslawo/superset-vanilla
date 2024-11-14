@@ -1,0 +1,347 @@
+# superset values from here
+# https://github.com/apache/superset/blob/master/helm/superset/values.yaml
+deploy: true
+
+nameOverride: 'superset-standalone'
+fullnameOverride: 'superset-standalone'
+
+image:
+  repository: bedag/hellodata-superset
+  tag: "3.1.0-HD1"
+  pullPolicy: Always
+
+#imagePullSecrets:
+#  - name: "regcred"
+
+initImage:
+  repository: jwilder/dockerize
+
+#  Configuration values for the postgresql dependency.
+#  ref: https://github.com/kubernetes/charts/blob/master/stable/postgresql/README.md
+postgresql:
+  enabled: true
+
+# Configuration values for the Redis dependency.
+# ref: https://github.com/bitnami/charts/blob/master/bitnami/redis
+# More documentation can be found here: https://artifacthub.io/packages/helm/bitnami/redis
+redis:
+  enabled: true
+  fullnameOverride: "superset-standalone-redis"
+  # global:
+  #   imageRegistry: artifacts.bedag.cloud/dockerhub
+  #   imagePullSecrets:
+  #     - regcred
+#    storageClass: "${storage_class_name_block}"
+  image:
+    tag: 6.2.6-debian-10-r120
+    pullPolicy: IfNotPresent
+  # Redis standalone/replication
+  architecture: standalone
+  metrics:
+    enabled: true
+    containerSecurityContext:
+      enabled: true
+      runAsUser: 1001
+      runAsGroup: 0
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
+  # set custom uid
+  uid: 999
+  securityContext:
+    runAsUser: 999
+    fsGroup: 999
+    runAsGroup: 999
+    runAsNonRoot: true
+  master:
+    resources: {}
+    persistence:
+      size: 5Gi
+      enabled: true
+
+#bootstrapScript: |
+#  #!/bin/bash
+#  pip install statsd==4.0.1
+#  if [ ! -f ~/bootstrap ]; then echo "Running Superset with uid {{ .Values.runAsUser }}" > ~/bootstrap; fi
+
+supersetWebsockets:
+  enabled: false
+
+# Superset worker configuration
+supersetWorker:
+  replicaCount: 0
+  strategy:
+    type: Recreate
+  resources: {}
+  podSecurityContext: {}
+  containerSecurityContext: {}
+
+# Init job configuration
+init:
+  createAdmin: true
+  adminUser:
+    username: techadmin
+    firstname: techadmin
+    lastname: techadmin
+    email: techadmin@hellodata.ch
+    password: techadmin
+  # if you need examples run "superset load-examples" in the pod. We disable loadingExamples here, as a redeployment always reruns all that init logic
+  loadExamples: false
+
+  podSecurityContext: {}
+  containerSecurityContext: {}
+  # Warning: fab command consumes a lot of ram and can
+  # cause the process to be killed due to OOM if it exceeds limit
+  resources: {}
+
+# Extra Environment variables for all superset containers
+extraEnv:
+  SMTP_HOST: "${smtp_host}"
+  SMTP_USER: "${smtp_user}"
+  SMTP_PORT: "${smtp_port}"
+  SMTP_MAIL_FROM: "${smtp_mail_from}"
+  SMTP_STARTTLS: "${smtp_starttls}"
+  SMTP_SSL: "${smtp_ssl}"
+#  STATSD_PORT: "9125"
+  # https://docs.gunicorn.org/en/stable/settings.html#
+  GUNICORN_TIMEOUT: 300
+  # This is calculated with the recommended formula from the gunicorn docs
+  # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
+  SERVER_WORKER_AMOUNT: 3
+  GUNICORN_LOG_LEVEL: 'debug'
+#  STATSD_HOST: "${base_release_name}-infrastructure-prometheus-statsd-exporter.${namespace}.svc.cluster.local"
+#  REDIS_HOST: 'superset-${data_domain_01_key}-redis-headless.${namespace}.svc.cluster.local'
+#  REDIS_PORT: "6379"
+  TALISMAN_ENABLED: "False"
+
+# Superset beat configuration (to trigger scheduled jobs like reports)
+supersetCeleryBeat:
+  enabled: false
+
+supersetCeleryFlower:
+  enabled: false
+
+# Run containers as root is not recommended in production. Change this to another UID - e.g. 1000 to be more secure
+runAsUser: 1000
+
+configOverrides:
+  feature_flags: |
+    # Allow for javascript controls components
+    FEATURE_FLAGS = {
+      'ENABLE_JAVASCRIPT_CONTROLS': True,
+      'ENABLE_TEMPLATE_PROCESSING': True,
+      'ENABLE_TEMPLATE_REMOVE_FILTERS': True,
+      'DASHBOARD_RBAC': True,
+      'ALERT_REPORTS': True,
+      'THUMBNAILS': False,
+      'THUMBNAILS_SQLA_LISTENERS': True,
+      'GLOBAL_ASYNC_QUERIES': False,
+      'HORIZONTAL_FILTER_BAR': True,
+    }
+    GLOBAL_ASYNC_QUERIES_JWT_SECRET = 'R0txyH4dTxdzbGVxuGA4weFfEL3chfMDWrUl3aBa18lQYorR'
+    GLOBAL_ASYNC_QUERIES_REDIS_CONFIG = {
+        "port": env("REDIS_PORT"),
+        "host": env("REDIS_HOST"),
+        "password": "",
+        "db": 0,
+        "ssl": False,
+    }
+
+  filter_cache_config: |
+    REDIS_HOST = env("REDIS_HOST")
+    REDIS_PORT = env("REDIS_PORT")
+    # REDIS_CELERY_DB = env("REDIS_CELERY_DB", 2)
+    REDIS_CELERY_DB = env("REDIS_CELERY_DB", 0)
+    # REDIS_RESULTS_DB = env("REDIS_RESULTS_DB", 3)
+    REDIS_RESULTS_DB = env("REDIS_RESULTS_DB", 0)
+
+    # enable results caching
+    from cachelib.redis import RedisCache
+    RESULTS_BACKEND = RedisCache(host=env('REDIS_HOST'), port=env('REDIS_PORT'), key_prefix='superset_results')
+
+    # Dashboard filter state (required)
+    FILTER_STATE_CACHE_CONFIG = {
+      'CACHE_TYPE': 'redis',
+      'CACHE_DEFAULT_TIMEOUT': 86400,
+      'CACHE_KEY_PREFIX': 'superset_filter_',
+      'CACHE_REDIS_HOST': env('REDIS_HOST'),
+      'CACHE_REDIS_PORT': env('REDIS_PORT'),
+      'CACHE_REDIS_PASSWORD': env('REDIS_PASSWORD'),
+      'CACHE_REDIS_DB': env('REDIS_DB', 1),
+      # should the timeout be reset when retrieving a cached value
+      'REFRESH_TIMEOUT_ON_RETRIEVAL': True,
+    }
+    # Explore chart form data (required)
+    EXPLORE_FORM_DATA_CACHE_CONFIG = {
+      'CACHE_TYPE': 'redis',
+      'CACHE_DEFAULT_TIMEOUT': 86400,
+      'CACHE_KEY_PREFIX': 'superset_form_data_',
+      'CACHE_REDIS_HOST': env('REDIS_HOST'),
+      'CACHE_REDIS_PORT': env('REDIS_PORT'),
+      'CACHE_REDIS_PASSWORD': env('REDIS_PASSWORD'),
+      'CACHE_REDIS_DB': env('REDIS_DB', 1),
+      # should the timeout be reset when retrieving a cached value
+      'REFRESH_TIMEOUT_ON_RETRIEVAL': True,
+    }
+    #  Charting data queried from datasets (optional)
+    DATA_CACHE_CONFIG = {
+      "CACHE_TYPE": "redis",
+      "CACHE_DEFAULT_TIMEOUT": 86400,
+      "CACHE_KEY_PREFIX": "superset_",
+      'CACHE_REDIS_HOST': env('REDIS_HOST'),
+      'CACHE_REDIS_PORT': env('REDIS_PORT'),
+      'CACHE_REDIS_PASSWORD': env('REDIS_PASSWORD'),
+      "CACHE_REDIS_DB": env("REDIS_RESULTS_DB", 0),
+    }
+    CACHE_CONFIG = {
+      "CACHE_TYPE": "redis",
+      "CACHE_DEFAULT_TIMEOUT": 86400,
+      "CACHE_KEY_PREFIX": "superset_",
+      'CACHE_REDIS_HOST': env('REDIS_HOST'),
+      'CACHE_REDIS_PORT': env('REDIS_PORT'),
+      'CACHE_REDIS_PASSWORD': env('REDIS_PASSWORD'),
+      "CACHE_REDIS_DB": env("REDIS_RESULTS_DB", 0),
+    }
+
+  celery_config: |
+    from celery.schedules import crontab
+
+    class CeleryConfig(object):
+      broker_url = f"redis://{env('REDIS_HOST')}:{env('REDIS_PORT')}/{env('REDIS_CELERY_DB', 0)}"
+      imports = ('superset.sql_lab', 'superset.tasks', 'superset.tasks.thumbnails', )
+      result_backend = f"redis://{env('REDIS_HOST')}:{env('REDIS_PORT')}/{env('REDIS_RESULTS_DB', 0)}"
+      worker_log_level = "DEBUG"
+      task_annotations = {
+      'sql_lab.get_sql_results': {
+        'rate_limit': '100/s',
+      },
+      'email_reports.send': {
+        'rate_limit': '1/s',
+        'time_limit': 600,
+        'soft_time_limit': 600,
+        'ignore_result': True,
+      },
+      }
+      beat_schedule = {
+      'reports.scheduler': {
+        'task': 'reports.scheduler',
+        'schedule': crontab(minute='*', hour='*'),
+      },
+      'reports.prune_log': {
+        'task': 'reports.prune_log',
+        'schedule': crontab(minute=0, hour=0),
+      },
+      'cache-warmup-hourly': {
+        'task': 'cache-warmup',
+        'schedule': crontab(minute='*/30', hour='*'),
+        'kwargs': {
+          'strategy_name': 'top_n_dashboards',
+          'top_n': 10,
+          'since': '7 days ago',
+        },
+      }
+    }
+
+    CELERY_CONFIG = CeleryConfig
+
+    #SCREENSHOT_LOCATE_WAIT = 100
+    #SCREENSHOT_LOAD_WAIT = 600
+
+    ESTIMATE_QUERY_COST = True
+
+  thumbnail_config: |
+    from superset.superset_typing import CacheConfig
+    THUMBNAIL_CACHE_CONFIG: CacheConfig = {
+        'CACHE_TYPE': 'redis',
+        'CACHE_DEFAULT_TIMEOUT': 24*60*60*7,
+        'CACHE_KEY_PREFIX': 'thumbnail_',
+        'CACHE_REDIS_URL': f"redis://{env('REDIS_HOST')}:{env('REDIS_PORT')}/1"
+    }
+    # Async selenium thumbnail task will use the following user
+    THUMBNAIL_SELENIUM_USER = "techadmin"
+
+  smtp: |
+    import ast
+    SMTP_HOST = os.getenv("SMTP_HOST","localhost")
+    SMTP_STARTTLS = ast.literal_eval(os.getenv("SMTP_STARTTLS", "True"))
+    SMTP_SSL = ast.literal_eval(os.getenv("SMTP_SSL", "False"))
+    SMTP_USER = os.getenv("SMTP_USER","superset")
+    SMTP_PORT = os.getenv("SMTP_PORT",25)
+    SMTP_PASSWORD = os.getenv("SMTP_PASSWORD","superset")
+
+  enable_languages: |
+    BABEL_DEFAULT_LOCALE = "de"
+    
+    LANGUAGES = {
+      "de": {"flag": "de", "name": "German"},
+      "fr": {"flag": "fr", "name": "French"},
+      "en": {"flag": "us", "name": "English"},
+    }
+
+  # --> follow installation: https://superset.apache.org/docs/installation/alerts-reports/
+  base_app_config: |
+    # max dashboard size is 1GB
+    SUPERSET_DASHBOARD_POSITION_DATA_LIMIT = 1073741824
+
+  enable_logging: |
+    ENABLE_TIME_ROTATE = True
+
+  domain_sharding: |
+    CORS_OPTIONS = {
+      'supports_credentials': True,
+      'allow_headers': ['*'],
+      'resources':['*'],
+      'origins': ['*']
+    }
+
+instance:
+  domain: ${business_domain_tld}
+  tls:
+    enabled: true
+  name: "Superset standalone"
+  host: superset-standalone
+
+# Superset node configuration
+supersetNode:
+  replicaCount: 3
+  podSecurityContext: {}
+  containerSecurityContext: {}
+  resources: {}
+  strategy:
+    type: RollingUpdate
+  connections:
+    db_host: "superset-postgresql"
+    db_port: "5432"
+    db_name: superset
+
+ingress:
+  enabled: true
+  ingressClassName: "kb-pfe"
+  annotations:
+    kubernetes.io/tls-acme: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+    cert-manager.io/common-name: "superset-standalone.${business_domain_tld}"
+    cert-manager.io/acme-challenge-type: "http01"
+    cert-manager.io/acme-challenge-dns-names: "superset-standalone.${business_domain_tld}"
+  hosts:
+    - "superset-standalone.${business_domain_tld}"
+  tls:
+    - secretName: "all-superset-standalone-tls"
+      hosts:
+        - "superset-standalone.${business_domain_tld}"
+
+extraVolumeMounts:
+  - name: superset-gunicorn
+    mountPath: /usr/bin/run-server.sh
+    subPath: "run-server.sh"
+
+extraVolumes:
+  - name: superset-gunicorn
+    configMap:
+      defaultMode: 0755
+      name: "superserver-run-server"
