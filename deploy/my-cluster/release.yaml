@@ -4,7 +4,7 @@ metadata:
   name: superset-release
   namespace: flux-system
 spec:
-  targetNamespace: superset
+  targetNamespace: superset-ns
   releaseName: superset
   chart:
     spec:
@@ -12,8 +12,8 @@ spec:
       version: superset
       sourceRef:
         kind: HelmRepository
-        name: superset
-        namespace: superset
+        name: superset-repository
+        namespace: flux-system
   interval: 1m0s
   install:
     remediation:
