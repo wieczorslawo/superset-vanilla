@@ -27,11 +27,6 @@ postgresql:
 redis:
   enabled: true
   fullnameOverride: "superset-standalone-redis"
-  # global:
-  #   imageRegistry: artifacts.bedag.cloud/dockerhub
-  #   imagePullSecrets:
-  #     - regcred
-#    storageClass: "${storage_class_name_block}"
   image:
     tag: 6.2.6-debian-10-r120
     pullPolicy: IfNotPresent
@@ -62,11 +57,6 @@ redis:
     persistence:
       size: 5Gi
       enabled: true
-
-#bootstrapScript: |
-#  #!/bin/bash
-#  pip install statsd==4.0.1
-#  if [ ! -f ~/bootstrap ]; then echo "Running Superset with uid {{ .Values.runAsUser }}" > ~/bootstrap; fi
 
 supersetWebsockets:
   enabled: false
