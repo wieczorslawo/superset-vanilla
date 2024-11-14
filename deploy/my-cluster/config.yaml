@@ -91,12 +91,6 @@ init:
 
 # Extra Environment variables for all superset containers
 extraEnv:
-  SMTP_HOST: "${smtp_host}"
-  SMTP_USER: "${smtp_user}"
-  SMTP_PORT: "${smtp_port}"
-  SMTP_MAIL_FROM: "${smtp_mail_from}"
-  SMTP_STARTTLS: "${smtp_starttls}"
-  SMTP_SSL: "${smtp_ssl}"
   # https://docs.gunicorn.org/en/stable/settings.html#
   GUNICORN_TIMEOUT: 300
   # This is calculated with the recommended formula from the gunicorn docs
