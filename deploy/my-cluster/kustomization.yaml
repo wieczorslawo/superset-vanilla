@@ -4,7 +4,6 @@ namespace: ${superset_namespace}
 resources:
   - repository.yaml
   - release.yaml
-  - secrets.yaml
 configMapGenerator:
   - name: superset-config
     files:
