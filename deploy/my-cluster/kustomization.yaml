@@ -10,5 +10,6 @@ configMapGenerator:
   - name: superset-config
     files:
       - values.yaml=config.yaml
+    namespace: flux-system
 generatorOptions:
   disableNameSuffixHash: true
