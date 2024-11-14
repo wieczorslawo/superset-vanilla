@@ -297,14 +297,3 @@ supersetNode:
     db_host: "superset-postgresql"
     db_port: "5432"
     db_name: superset
-
-extraVolumeMounts:
-  - name: superset-gunicorn
-    mountPath: /usr/bin/run-server.sh
-    subPath: "run-server.sh"
-
-extraVolumes:
-  - name: superset-gunicorn
-    configMap:
-      defaultMode: 0755
-      name: "superserver-run-server"
