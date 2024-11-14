@@ -281,7 +281,7 @@ configOverrides:
 
 # Superset node configuration
 supersetNode:
-  replicaCount: 3
+  replicaCount: 1
   podSecurityContext: {}
   containerSecurityContext: {}
   resources: {}
