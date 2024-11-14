@@ -2,6 +2,7 @@ apiVersion: source.toolkit.fluxcd.io/v1beta1
 kind: HelmRepository
 metadata:
   name: superset
+  namespace: flux-system
 spec:
   interval: 5m
   url: https://apache.github.io/superset
