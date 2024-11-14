@@ -1,5 +1,13 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: ${superset_namespace}
 resources:
-  - ./superset/superset-helmrepository.yaml
-  - ./superset/superset-helmrelease.yaml
+  - repository.yaml
+  - release.yaml
+  - secrets.yaml
+configMapGenerator:
+  - name: superset-config
+    files:
+      - values.yaml=config.yaml
+generatorOptions:
+  disableNameSuffixHash: true

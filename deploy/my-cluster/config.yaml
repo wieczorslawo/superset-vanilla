@@ -1,7 +1,3 @@
-# superset values from here
-# https://github.com/apache/superset/blob/master/helm/superset/values.yaml
-deploy: true
-
 nameOverride: 'superset-standalone'
 fullnameOverride: 'superset-standalone'
 
@@ -10,16 +6,19 @@ image:
   tag: "3.1.0-HD1"
   pullPolicy: Always
 
-#imagePullSecrets:
-#  - name: "regcred"
-
 initImage:
   repository: jwilder/dockerize
+
+
+secretEnv:
+  create: true
+
 
 #  Configuration values for the postgresql dependency.
 #  ref: https://github.com/kubernetes/charts/blob/master/stable/postgresql/README.md
 postgresql:
   enabled: true
+
 
 # Configuration values for the Redis dependency.
 # ref: https://github.com/bitnami/charts/blob/master/bitnami/redis
@@ -57,6 +56,8 @@ redis:
     persistence:
       size: 5Gi
       enabled: true
+
+
 
 supersetWebsockets:
   enabled: false
@@ -96,16 +97,12 @@ extraEnv:
   SMTP_MAIL_FROM: "${smtp_mail_from}"
   SMTP_STARTTLS: "${smtp_starttls}"
   SMTP_SSL: "${smtp_ssl}"
-#  STATSD_PORT: "9125"
   # https://docs.gunicorn.org/en/stable/settings.html#
   GUNICORN_TIMEOUT: 300
   # This is calculated with the recommended formula from the gunicorn docs
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
   SERVER_WORKER_AMOUNT: 3
   GUNICORN_LOG_LEVEL: 'debug'
-#  STATSD_HOST: "${base_release_name}-infrastructure-prometheus-statsd-exporter.${namespace}.svc.cluster.local"
-#  REDIS_HOST: 'superset-${data_domain_01_key}-redis-headless.${namespace}.svc.cluster.local'
-#  REDIS_PORT: "6379"
   TALISMAN_ENABLED: "False"
 
 # Superset beat configuration (to trigger scheduled jobs like reports)
@@ -288,13 +285,6 @@ configOverrides:
       'origins': ['*']
     }
 
-instance:
-  domain: ${business_domain_tld}
-  tls:
-    enabled: true
-  name: "Superset standalone"
-  host: superset-standalone
-
 # Superset node configuration
 supersetNode:
   replicaCount: 3
@@ -307,23 +297,6 @@ supersetNode:
     db_host: "superset-postgresql"
     db_port: "5432"
     db_name: superset
-
-ingress:
-  enabled: true
-  ingressClassName: "kb-pfe"
-  annotations:
-    kubernetes.io/tls-acme: "true"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-    cert-manager.io/common-name: "superset-standalone.${business_domain_tld}"
-    cert-manager.io/acme-challenge-type: "http01"
-    cert-manager.io/acme-challenge-dns-names: "superset-standalone.${business_domain_tld}"
-  hosts:
-    - "superset-standalone.${business_domain_tld}"
-  tls:
-    - secretName: "all-superset-standalone-tls"
-      hosts:
-        - "superset-standalone.${business_domain_tld}"
 
 extraVolumeMounts:
   - name: superset-gunicorn
