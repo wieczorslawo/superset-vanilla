@@ -120,12 +120,21 @@ init:
 # Extra Environment variables for all superset containers
 extraEnv:
   # https://docs.gunicorn.org/en/stable/settings.html#
-  GUNICORN_TIMEOUT: 300
+  - name: GUNICORN_TIMEOUT
+    value: 300
   # This is calculated with the recommended formula from the gunicorn docs
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
-  SERVER_WORKER_AMOUNT: 3
-  GUNICORN_LOG_LEVEL: 'debug'
-  TALISMAN_ENABLED: "False"
+  - name: SERVER_WORKER_AMOUNT
+    value: 3
+  - name: GUNICORN_LOG_LEVEL
+    value: 'debug'
+  - name: TALISMAN_ENABLED
+    value: "False"
+  - name: CSV_SCHEMA_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: superset-postgresql
+        key: password
 
 # -- Extra files to mount on `/app/pythonpath`
 extraConfigs:
@@ -147,7 +156,7 @@ extraConfigs:
               "schemas_allowed_for_file_upload": []
           }
         sqlalchemy_uri: >-
-        postgresql+psycopg2://superset:{{ .Values.supersetPostgresql.secret.password }}@superset-postgresql:5432/superset?options=-csearch_path%3Dcsv
+          postgresql+psycopg2://superset:${CSV_SCHEMA_PASSWORD}@superset-postgresql:5432/superset?options=-csearch_path%3Dcsv
         tables: []
 
 # Superset beat configuration (to trigger scheduled jobs like reports)
