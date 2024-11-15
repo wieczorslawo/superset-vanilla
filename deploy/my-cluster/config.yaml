@@ -154,7 +154,7 @@ extraConfigs:
               "schemas_allowed_for_file_upload": []
           }
         sqlalchemy_uri: >-
-          postgresql+psycopg2://superset:{{ .Values.extraEnvRaw | select "CSV_SCHEMA_PASSWORD" | first }}@superset-postgresql:5432/superset?options=-csearch_path%3Dcsv
+          postgresql+psycopg2://superset:env["CSV_SCHEMA_PASSWORD"]@superset-postgresql:5432/superset?options=-csearch_path%3Dcsv
         tables: []
 
 # Superset beat configuration (to trigger scheduled jobs like reports)
