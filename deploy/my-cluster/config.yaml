@@ -121,11 +121,11 @@ init:
 extraEnv:
   # https://docs.gunicorn.org/en/stable/settings.html#
   - name: GUNICORN_TIMEOUT
-    value: 300
+    value: "300"
   # This is calculated with the recommended formula from the gunicorn docs
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
   - name: SERVER_WORKER_AMOUNT
-    value: 3
+    value: "3"
   - name: GUNICORN_LOG_LEVEL
     value: 'debug'
   - name: TALISMAN_ENABLED
