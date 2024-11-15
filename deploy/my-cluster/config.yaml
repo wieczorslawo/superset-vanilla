@@ -18,6 +18,10 @@ secretEnv:
 #  ref: https://github.com/kubernetes/charts/blob/master/stable/postgresql/README.md
 postgresql:
   enabled: true
+  primary:
+    initdbScripts:
+      create_csv_schema.sql: |
+        CREATE SCHEMA IF NOT EXISTS csv;
 
 
 # Configuration values for the Redis dependency.
