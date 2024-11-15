@@ -62,8 +62,6 @@ redis:
       size: 5Gi
       enabled: true
 
-
-
 supersetWebsockets:
   enabled: false
 
@@ -93,6 +91,36 @@ init:
   # Warning: fab command consumes a lot of ram and can
   # cause the process to be killed due to OOM if it exceeds limit
   resources: {}
+  # we are extending the base initscript here, including our HelloDATA liquibase migrations.
+  initscript: |-
+    #!/bin/sh
+    set -eu
+    echo "Upgrading DB schema..."
+    superset db upgrade
+    echo "Initializing roles..."
+    superset init
+    {{ if .Values.init.createAdmin }}
+    echo "Creating admin user..."
+    superset fab create-admin \
+                    --username {{ .Values.init.adminUser.username }} \
+                    --firstname {{ .Values.init.adminUser.firstname }} \
+                    --lastname {{ .Values.init.adminUser.lastname }} \
+                    --email {{ .Values.init.adminUser.email }} \
+                    --password {{ .Values.init.adminUser.password }} \
+                    || true
+    {{- end }}
+    {{ if .Values.init.loadExamples }}
+    echo "Loading examples..."
+    superset load_examples
+    {{- end }}
+    {{ if .Values.init.liquibase.enabled }}
+    echo "Running liquibase migrations..."
+    /db/wait-and-migrate.sh
+    {{- end }}
+    if [ -f "{{ .Values.extraConfigMountPath }}/import_datasources.yaml" ]; then
+      echo "Importing database connections.... "
+      superset import_datasources -p {{ .Values.extraConfigMountPath }}/import_datasources.yaml
+    fi
 
 # Extra Environment variables for all superset containers
 extraEnv:
@@ -103,6 +131,29 @@ extraEnv:
   SERVER_WORKER_AMOUNT: 3
   GUNICORN_LOG_LEVEL: 'debug'
   TALISMAN_ENABLED: "False"
+
+# -- Extra files to mount on `/app/pythonpath`
+extraConfigs:
+  import_datasources.yaml: |
+    databases:
+      - allow_file_upload: true
+        allow_ctas: false
+        allow_cvas: false
+        allow_dml: false
+        allow_run_async: false
+        allow_csv_upload: true
+        expose_in_sqllab: true
+        database_name: superset
+        extra: |
+          {
+              "metadata_params": {},
+              "engine_params": {},
+              "metadata_cache_timeout": {},
+              "schemas_allowed_for_file_upload": []
+          }
+        sqlalchemy_uri: >-
+        postgresql+psycopg2://superset:{{ .Values.supersetPostgresql.secret.password }}@superset-postgresql:5432/superset?options=-csearch_path%3Dcsv
+        tables: []
 
 # Superset beat configuration (to trigger scheduled jobs like reports)
 supersetCeleryBeat:
