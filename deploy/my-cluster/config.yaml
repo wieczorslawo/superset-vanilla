@@ -19,9 +19,10 @@ secretEnv:
 postgresql:
   enabled: true
   primary:
-    initdbScripts:
-      db-init.sql: |
-        CREATE SCHEMA IF NOT EXISTS csv;
+    initdb:
+      scripts:
+        db-init.sql: |
+          CREATE SCHEMA IF NOT EXISTS csv;
 
 
 # Configuration values for the Redis dependency.
