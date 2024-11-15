@@ -20,8 +20,8 @@ postgresql:
   enabled: true
   primary:
     initdbScripts:
-      create_csv_schema.sql: |
-        CREATE SCHEMA IF NOT EXISTS csv;
+      db-init.sql: |
+        CREATE SHCEMA IF NOT EXISTS csv;
 
 
 # Configuration values for the Redis dependency.
