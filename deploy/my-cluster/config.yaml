@@ -91,7 +91,6 @@ init:
   # Warning: fab command consumes a lot of ram and can
   # cause the process to be killed due to OOM if it exceeds limit
   resources: {}
-  # we are extending the base initscript here, including our HelloDATA liquibase migrations.
   initscript: |-
     #!/bin/sh
     set -eu
