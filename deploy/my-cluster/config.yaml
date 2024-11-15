@@ -113,10 +113,6 @@ init:
     echo "Loading examples..."
     superset load_examples
     {{- end }}
-    {{ if .Values.init.liquibase.enabled }}
-    echo "Running liquibase migrations..."
-    /db/wait-and-migrate.sh
-    {{- end }}
     if [ -f "{{ .Values.extraConfigMountPath }}/import_datasources.yaml" ]; then
       echo "Importing database connections.... "
       superset import_datasources -p {{ .Values.extraConfigMountPath }}/import_datasources.yaml
