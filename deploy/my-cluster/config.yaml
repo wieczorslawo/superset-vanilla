@@ -100,21 +100,20 @@ init:
     echo "Initializing roles..."
     superset init
     {{ if .Values.init.createAdmin }}
-    echo "Creating admin user..."
-    superset fab create-admin \
-                    --username {{ .Values.init.adminUser.username }} \
-                    --firstname {{ .Values.init.adminUser.firstname }} \
-                    --lastname {{ .Values.init.adminUser.lastname }} \
-                    --email {{ .Values.init.adminUser.email }} \
-                    --password {{ .Values.init.adminUser.password }} \
-                    || true
+      echo "Creating admin user..."
+      superset fab create-admin \
+                      --username {{ .Values.init.adminUser.username }} \
+                      --firstname {{ .Values.init.adminUser.firstname }} \
+                      --lastname {{ .Values.init.adminUser.lastname }} \
+                      --email {{ .Values.init.adminUser.email }} \
+                      --password {{ .Values.init.adminUser.password }} \
+                      || true
     {{- end }}
     {{ if .Values.init.loadExamples }}
     echo "Loading examples..."
     superset load_examples
     {{- end }}
-    if [ {{ .Values.importDatasources }} ]; then
-    if [ {{ .Values.importDatasources }} ]; then
+    {{ if .Values.importDatasources }} 
       echo "Importing database connections.... "
       echo "databases:
       - allow_file_upload: true
@@ -136,7 +135,7 @@ init:
           postgresql+psycopg2://superset:\$CSV_SCHEMA_PASSWORD@superset-postgresql:5432/data_upload
         tables: []" > /tmp/import_datasources.yaml
       superset import_datasources -p /tmp/import_datasources.yaml
-    fi
+    {{- end }}
 
 importDatasources: true
 
