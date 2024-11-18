@@ -113,7 +113,8 @@ init:
     echo "Loading examples..."
     superset load_examples
     {{- end }}
-    if [ -f "{{ .Values.extraConfigMountPath }}/import_datasources.yaml" ]; then
+    if [ {{ .Values.importDatasources }} ]; then
+    if [ {{ .Values.importDatasources }} ]; then
       echo "Importing database connections.... "
       echo "databases:
       - allow_file_upload: true
@@ -136,6 +137,8 @@ init:
         tables: []" > /tmp/import_datasources.yaml
       superset import_datasources -p /tmp/import_datasources.yaml
     fi
+
+importDatasources: true
 
 # Extra Environment variables for all superset containers
 extraEnv:
