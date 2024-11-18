@@ -132,7 +132,7 @@ init:
             \"metadata_cache_timeout\": {},
             \"schemas_allowed_for_file_upload\": []
         }
-      sqlalchemy_uri: postgresql+psycopg2://superset:$CSV_SCHEMA_PASSWORD@superset-postgresql:5432/data_upload
+      sqlalchemy_uri: postgresql+psycopg2://superset:$DB_PASS@superset-postgresql:5432/data_upload
       tables: []" > /tmp/import_datasources.yaml
     superset import_datasources -p /tmp/import_datasources.yaml
 
@@ -145,13 +145,6 @@ extraEnv:
   SERVER_WORKER_AMOUNT: 3
   GUNICORN_LOG_LEVEL: 'debug'
   TALISMAN_ENABLED: "False"
-
-extraEnvRaw:
-  - name: CSV_SCHEMA_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: superset-postgresql
-        key: password
 
 # Superset beat configuration (to trigger scheduled jobs like reports)
 supersetCeleryBeat:
