@@ -22,7 +22,7 @@ postgresql:
     initdb:
       scripts:
         db-init.sql: |
-          CREATE DATABASE IF NOT EXISTS data_upload;
+          CREATE DATABASE data_upload;
           ALTER DATABASE data_upload OWNER TO superset;
 
 
